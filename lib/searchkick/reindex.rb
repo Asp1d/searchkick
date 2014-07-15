@@ -275,6 +275,12 @@ module Searchkick
           }
         end
 
+        (options[:binary] || []).each do |field|
+          mapping[field] = {
+            type: "binary"
+          }
+        end
+
         mappings = {
           _default_: {
             properties: mapping,
