@@ -173,28 +173,37 @@ module Searchkick
       if options[:personalize]
         boost_where.merge!(options[:personalize])
       end
-      boost_where.each do |field, value|
-        if value.is_a?(Hash)
-          value, factor = value[:value], value[:factor]
-        else
-          factor = 1000
-        end
-        custom_filters << {
-          filter: {
-            term: {field => value}
-          },
-          boost_factor: factor
-        }
-      end
 
-      if custom_filters.any?
-        payload = {
-          function_score: {
-            functions: custom_filters,
-            query: payload,
-            score_mode: "sum"
+      if boost_where.is_a? Array
+        boost_where.each do |item|
+          item.each do |field, value|
+            if value.is_a?(Hash)
+              value, factor = value[:value], value[:factor]
+            else
+              factor = 1000
+            end
+            custom_filters << {
+              filter: {
+                term: { field => value }
+              },
+              boost_factor: factor
+            }
+          end
+        end
+      else
+        boost_where.each do |field, value|
+          if value.is_a?(Hash)
+            value, factor = value[:value], value[:factor]
+          else
+            factor = 1000
+          end
+          custom_filters << {
+            filter: {
+              term: { field => value }
+            },
+            boost_factor: factor
           }
-        }
+        end
       end
 
       payload = {
@@ -206,8 +215,7 @@ module Searchkick
 
       # order
       if options[:order]
-        order = options[:order].is_a?(Enumerable) ? options[:order] : {options[:order] => :asc}
-        payload[:sort] = Hash[ order.map{|k, v| [k.to_s == "id" ? :_id : k, v] } ]
+        payload[:sort]= options[:order].is_a?(Enumerable) ? options[:order] : {options[:order] => :asc}
       end
 
       # filters
